@@ -7,8 +7,8 @@ import com.windmill312.smtp.client.queue.MessageQueueMap;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import static com.windmill312.smtp.client.enums.Domain.MAIL_RU;
-import static com.windmill312.smtp.client.service.SMTPMXLookUpService.isAddressValid;
+import static com.windmill312.smtp.client.enums.Domain.YANDEX_RU;
+import static com.windmill312.smtp.client.service.SMTPMXLookUpService.sendMessage;
 import static java.lang.Thread.sleep;
 
 public class MessageSenderService implements Runnable, AutoCloseable {
@@ -20,7 +20,7 @@ public class MessageSenderService implements Runnable, AutoCloseable {
     private final ConcurrentLinkedQueue<PreparedMessage> messageQueue;
 
     MessageSenderService() {
-        this.messageQueue = MessageQueueMap.instance().get(MAIL_RU.value);
+        this.messageQueue = MessageQueueMap.instance().get(YANDEX_RU.value);
     }
 
     @Override
@@ -36,9 +36,8 @@ public class MessageSenderService implements Runnable, AutoCloseable {
                 //todo add domain services
                 PreparedMessage message = messageQueue.poll();
                 if (message != null) {
-                    if (isAddressValid(message)) {
-                        System.out.println("Message: '" + message + "' successfully sent");
-                    }
+                    sendMessage(message);
+                    logger.info("Message: [" + message + "] successfully sent");
                 }
 
                 sleep(DELAY_MILLIS);
