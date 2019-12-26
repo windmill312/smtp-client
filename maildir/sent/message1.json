@@ -1,0 +1,5 @@
+{
+  "from": "anna@mail.ru",
+  "to": ["windmill312@yandex.ru", "pavlova312@yandex.ru"],
+  "data": "Hello from Telnet!"
+}
