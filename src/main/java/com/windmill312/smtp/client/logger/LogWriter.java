@@ -9,10 +9,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class LogWriter implements Runnable, AutoCloseable {
 
-    private static final Long DELAY_MILLIS = 1000L;
     private volatile boolean stopped = false;
     private final String logFileName = "client.log";
     private final ApplicationProperties properties;
@@ -38,15 +39,11 @@ public class LogWriter implements Runnable, AutoCloseable {
                 if (logMessage != null) {
                     Files.write(
                             createOrGetLogFilePath(properties.getLogPath()),
-                            (logMessage + "\n").getBytes(),
+                            ("[" + LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME) + "] " + logMessage + "\n").getBytes(),
                             StandardOpenOption.APPEND
                     );
-                } else {
-                    Thread.sleep(DELAY_MILLIS);
                 }
             }
-        } catch (InterruptedException e) {
-            System.out.println("LogWriter thread is interrupted");
         } catch (IOException e) {
             System.out.println("Got error while saving logs to file: " + e.getLocalizedMessage());
         }

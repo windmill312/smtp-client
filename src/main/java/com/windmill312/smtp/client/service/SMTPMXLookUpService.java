@@ -191,7 +191,11 @@ class SMTPMXLookUpService {
                         logger.error("Got error while closing connection [status:" + responseStatus + "]");
                     }
 
+                    reader.close();
+                    writer.close();
+                    socket.close();
                     break;
+
                 } catch (IOException ex) {
                     logger.error("Got exception: " + ex.getLocalizedMessage());
                     return false;

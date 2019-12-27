@@ -1,5 +1,6 @@
 package com.windmill312.smtp.client.service;
 
+import com.windmill312.smtp.client.enums.Domain;
 import com.windmill312.smtp.client.logger.Logger;
 import com.windmill312.smtp.client.logger.LoggerFactory;
 import com.windmill312.smtp.client.model.DirectMessage;
@@ -21,8 +22,8 @@ public class MessageSenderService implements Runnable, AutoCloseable {
 
     private final ConcurrentLinkedQueue<DirectMessage> directMessageQueue;
 
-    MessageSenderService() {
-        this.directMessageQueue = MessageQueueMap.instance().get(YANDEX_RU.value);
+    MessageSenderService(Domain domain) {
+        this.directMessageQueue = MessageQueueMap.instance().get(domain.value);
     }
 
     @Override

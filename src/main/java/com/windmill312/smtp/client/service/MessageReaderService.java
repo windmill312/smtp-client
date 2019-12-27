@@ -102,10 +102,11 @@ public class MessageReaderService implements Runnable, AutoCloseable {
                 pluralMessages.clear();
                 sleep(DELAY_MILLIS);
 
+            } catch (IOException e) {
+                logger.error("Mail directory is invalid: " + e.getLocalizedMessage());
+                this.stopped = true;
             } catch (InterruptedException e) {
                 System.out.println("MessageReader thread is interrupted");
-            } catch (IOException e) {
-                logger.error("Mail directory is invalid. Error: " + e.getLocalizedMessage());
             }
         }
 
