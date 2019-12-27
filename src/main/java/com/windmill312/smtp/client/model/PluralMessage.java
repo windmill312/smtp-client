@@ -7,7 +7,7 @@ import java.util.List;
 
 @Data
 @RequiredArgsConstructor
-public class Message {
+public class PluralMessage {
     private final String from;
     private final List<String> to;
     private final String data;

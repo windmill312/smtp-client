@@ -1,9 +1,10 @@
 package com.windmill312.smtp.client.service;
 
-import com.windmill312.smtp.client.exceptions.SendException;
+import com.windmill312.smtp.client.config.ApplicationProperties;
 import com.windmill312.smtp.client.logger.Logger;
 import com.windmill312.smtp.client.logger.LoggerFactory;
-import com.windmill312.smtp.client.model.PreparedMessage;
+import com.windmill312.smtp.client.model.DirectMessage;
+import com.windmill312.smtp.client.model.MessageBatch;
 
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
@@ -16,13 +17,17 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Hashtable;
 
+import static com.windmill312.smtp.client.enums.MessageState.*;
+
 class SMTPMXLookUpService {
 
     public static Logger logger = LoggerFactory.getLogger(SMTPMXLookUpService.class);
+    public static ApplicationProperties applicationProperties = ApplicationProperties.instance();
 
     private static int hear(BufferedReader in) throws IOException {
         String line;
@@ -42,151 +47,160 @@ class SMTPMXLookUpService {
         return result;
     }
 
+    private static String getDomain(String email) {
+        int position = email.indexOf('@');
+        if (position == -1) {
+            logger.warn("Email: <" + email + "> is invalid");
+        }
+
+        return email.substring(++position);
+    }
+
     private static void say(BufferedWriter wr, String text) throws IOException {
         wr.write(text + "\r\n");
         wr.flush();
     }
 
-    private static ArrayList<String> getMX(String hostName)
-            throws NamingException {
+    private static ArrayList<String> getMX(String hostName) {
         Hashtable env = new Hashtable();
         env.put(
                 "java.naming.factory.initial",
                 "com.sun.jndi.dns.DnsContextFactory"
         );
-        DirContext context = new InitialDirContext(env);
-        Attributes attributes = context.getAttributes(hostName, new String[]{"MX"});
-        Attribute attribute = attributes.get("MX");
 
-        if ((attribute == null) || (attribute.size() == 0)) {
-            attributes = context.getAttributes(hostName, new String[]{"A"});
-            attribute = attributes.get("A");
-            if (attribute == null) {
-                throw new NamingException
-                        ("No match for name '" + hostName + "'");
-            }
-        }
-
-        ArrayList result = new ArrayList();
-        NamingEnumeration enumeration = attribute.getAll();
-
-        while (enumeration.hasMore()) {
-            String mailHost;
-            String x = (String) enumeration.next();
-            String f[] = x.split(" ");
-
-            if (f.length == 1)
-                mailHost = f[0];
-            else if (f[1].endsWith("."))
-                mailHost = f[1].substring(0, (f[1].length() - 1));
-            else
-                mailHost = f[1];
-
-            result.add(mailHost);
-        }
-
-        return result;
-    }
-
-    static boolean sendMessage(PreparedMessage message) {
-        int position = message.getTo().indexOf('@');
-
-        if (position == -1) {
-            return false;
-        }
-
-        String domain = message.getTo().substring(++position);
-        ArrayList<String> mxList;
         try {
-            mxList = getMX(domain);
+            DirContext context = new InitialDirContext(env);
+            Attributes attributes = context.getAttributes(hostName, new String[]{"MX"});
+            Attribute attribute = attributes.get("MX");
+
+            if ((attribute == null) || (attribute.size() == 0)) {
+                attributes = context.getAttributes(hostName, new String[]{"A"});
+                attribute = attributes.get("A");
+                if (attribute == null) {
+                    throw new NamingException
+                            ("No match for name '" + hostName + "'");
+                }
+            }
+
+            ArrayList result = new ArrayList();
+            NamingEnumeration enumeration = attribute.getAll();
+
+            while (enumeration.hasMore()) {
+                String mailHost;
+                String x = (String) enumeration.next();
+                String f[] = x.split(" ");
+
+                if (f.length == 1)
+                    mailHost = f[0];
+                else if (f[1].endsWith("."))
+                    mailHost = f[1].substring(0, (f[1].length() - 1));
+                else
+                    mailHost = f[1];
+
+                result.add(mailHost);
+            }
+
+            if (result.size() == 0) {
+                logger.error("There is no MX records for " + hostName);
+                return null;
+            }
+
+            return result;
+
         } catch (NamingException ex) {
             logger.error("Got error while receiving MX records");
-            return false;
+            return null;
         }
+    }
 
-        if (mxList.size() == 0) {
-            logger.warn("There is no MX records");
-            return false;
-        }
+    static boolean sendBatch(MessageBatch messageBatch) {
+        String domain = getDomain(messageBatch.getMessages().get(0).getBody().getTo());
+        ArrayList<String> mxList = getMX(domain);
 
-        for (String mxRecord : mxList) {
-            boolean isValid = false;
-            try {
-                int responseStatus;
+        if (mxList != null) {
+            for (String mxRecord : mxList) {
+                try {
+                    Socket socket = new Socket();
+                    socket.connect(new InetSocketAddress(mxRecord, 25), applicationProperties.getSocketTimeoutMs());
 
-                Socket socket = new Socket(mxRecord, 25);
-                BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                    BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+                    int responseStatus;
 
-                responseStatus = hear(reader);
-                if (responseStatus != 220) {
-                    logger.error("Got error while opening the socket");
-                    throw new SendException("Invalid header");
-                }
-                say(writer, "HELO local.server");
+                    responseStatus = hear(reader);
+                    if (responseStatus == 220) {
+                        logger.info("MX record found for  <" + domain + ">: " + mxRecord);
+                    } else {
+                        logger.error("Got error while connecting to " + mxRecord + ":25");
+                        continue;
+                    }
 
-                responseStatus = hear(reader);
-                if (responseStatus != 250) {
-                    logger.error("Got error while connecting to SMTP port");
-                    throw new SendException("Not SMTP");
-                }
+                    for (DirectMessage message : messageBatch.getMessages()) {
 
-                // validate the sender address
-                say(writer, "MAIL FROM: " + message.getFrom());
-                responseStatus = hear(reader);
-                if (responseStatus != 250) {
-                    logger.error("Got error after MAIL FROM construct");
-                    throw new SendException("Sender rejected");
-                }
+                        say(writer, "HELO local.server");
+                        responseStatus = hear(reader);
+                        if (responseStatus == 250) {
+                            message.setState(HELO);
+                        } else {
+                            logger.error("Got error while connecting to SMTP port");
+                        }
 
-                say(writer, "RCPT TO: " + message.getTo());
-                responseStatus = hear(reader);
-                if (responseStatus != 250) {
-                    logger.error("Got error after RCPT TO construct");
-                    throw new SendException("Receiver rejected");
-                }
+                        say(writer, "MAIL FROM: " + message.getBody().getFrom());
+                        responseStatus = hear(reader);
+                        if (responseStatus == 250) {
+                            message.setState(MAIL_FROM);
+                        } else {
+                            logger.error("Got error after MAIL FROM construct");
+                        }
 
-                say(writer, "DATA");
-                responseStatus = hear(reader);
-                if (responseStatus != 354) {
-                    logger.error("Got error after DATA construct");
-                    throw new SendException("Data rejected");
-                }
+                        say(writer, "RCPT TO: " + message.getBody().getTo());
+                        responseStatus = hear(reader);
+                        if (responseStatus == 250) {
+                            message.setState(RCPT_TO);
+                        } else {
+                            logger.error("Got error after RCPT TO construct");
+                        }
 
-                say(writer, "From: " + message.getFrom().split("@")[0] + " <" + message.getFrom() + ">");
-                say(writer, "To: " + message.getTo().split("@")[0] + " <" + message.getTo() + ">");
-                say(writer, "Subject: Message from SMTP client");
-                say(writer, "Content-Type: text/plain");
-                say(writer, "\n");
-                for (String line : message.getData().split("\n")) {
-                    say(writer, line);
-                }
-                say(writer, ".");
-                responseStatus = hear(reader);
-                if (responseStatus != 250) {
-                    logger.error("Got error while sending mail data [status:" + responseStatus + "]");
-                    throw new SendException("Data content rejected: [status=" + responseStatus + "] " + reader.readLine());
-                }
+                        say(writer, "DATA");
+                        responseStatus = hear(reader);
+                        if (responseStatus == 354) {
+                            message.setState(DATA);
+                        } else {
+                            logger.error("Got error after DATA construct");
+                        }
 
-                say(writer, "QUIT");
-                responseStatus = hear(reader);
-                if (responseStatus != 221) {
-                    logger.error("Got error while closing connection [status:" + responseStatus + "]");
-                    throw new SendException("Address is not isValid!");
-                }
+                        say(writer, "From: " + message.getBody().getFrom().split("@")[0] + " <" + message.getBody().getFrom() + ">");
+                        say(writer, "To: " + message.getBody().getTo().split("@")[0] + " <" + message.getBody().getTo() + ">");
+                        say(writer, "Subject: Message from SMTP client");
+                        say(writer, "Content-Type: text/plain");
+                        say(writer, "\n");
+                        for (String line : message.getBody().getData().split("\n")) {
+                            say(writer, line);
+                        }
+                        say(writer, ".");
+                        responseStatus = hear(reader);
+                        if (responseStatus == 250) {
+                            message.setState(SENT);
+                        } else {
+                            logger.error("Got error while sending mail data [status:" + responseStatus + "]");
+                        }
+                    }
+                    say(writer, "QUIT");
+                    responseStatus = hear(reader);
+                    if (responseStatus != 221) {
+                        logger.error("Got error while closing connection [status:" + responseStatus + "]");
+                    }
 
-                isValid = true;
-                reader.close();
-                writer.close();
-                socket.close();
-            } catch (Exception ex) {
-                logger.error("Got unusual exception: " + ex.getLocalizedMessage());
-            } finally {
-                if (isValid) {
-                    return true;
+                    break;
+                } catch (IOException ex) {
+                    logger.error("Got exception: " + ex.getLocalizedMessage());
+                    return false;
                 }
             }
+        } else {
+            return false;
         }
-        return false;
+
+        return true;
     }
 }

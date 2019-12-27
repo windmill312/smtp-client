@@ -1,6 +1,6 @@
 package com.windmill312.smtp.client.queue;
 
-import com.windmill312.smtp.client.model.PreparedMessage;
+import com.windmill312.smtp.client.model.DirectMessage;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class MessageQueueMap {
 
-    private final Map<String, ConcurrentLinkedQueue<PreparedMessage>> messageQueueMap;
+    private final Map<String, ConcurrentLinkedQueue<DirectMessage>> messageQueueMap;
 
     public static final class MessageQueueMapHolder {
         static final MessageQueueMap INSTANCE = new MessageQueueMap();
@@ -26,7 +26,7 @@ public class MessageQueueMap {
         return MessageQueueMapHolder.INSTANCE;
     }
 
-    public ConcurrentLinkedQueue<PreparedMessage> get(String key) {
+    public ConcurrentLinkedQueue<DirectMessage> get(String key) {
         return this.messageQueueMap.get(key);
     }
 }

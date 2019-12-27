@@ -4,8 +4,8 @@ import com.google.gson.Gson;
 import com.windmill312.smtp.client.config.ApplicationProperties;
 import com.windmill312.smtp.client.logger.Logger;
 import com.windmill312.smtp.client.logger.LoggerFactory;
-import com.windmill312.smtp.client.model.Message;
-import com.windmill312.smtp.client.model.PreparedMessage;
+import com.windmill312.smtp.client.model.PluralMessage;
+import com.windmill312.smtp.client.model.DirectMessage;
 import com.windmill312.smtp.client.queue.MessageQueueMap;
 
 import java.io.BufferedReader;
@@ -42,7 +42,7 @@ public class MessageReaderService implements Runnable, AutoCloseable {
     @Override
     public void run() {
         System.out.println("MessageReader thread started");
-        List<Message> messages = new ArrayList<>();
+        List<PluralMessage> pluralMessages = new ArrayList<>();
         ApplicationProperties instance = ApplicationProperties.instance();
         Gson gson = new Gson();
 
@@ -51,19 +51,19 @@ public class MessageReaderService implements Runnable, AutoCloseable {
                 Files.walk(Paths.get(instance.getMailDir()), 1).filter(Files::isRegularFile)
                         .forEach(messagePath -> {
                             try {
-                                messages.add(
+                                pluralMessages.add(
                                         gson.fromJson(
                                                 new BufferedReader(
                                                         new FileReader(messagePath.toFile())
                                                 ),
-                                                Message.class
+                                                PluralMessage.class
                                         )
                                 );
 
                                 if (messagePath.toFile().renameTo(
                                         new File(
                                                 getOrCreateSentDirectory(instance.getMailDir()) +
-                                                        "/" +
+                                                        File.separator +
                                                         messagePath.getFileName()
                                         )
                                 )) {
@@ -73,31 +73,33 @@ public class MessageReaderService implements Runnable, AutoCloseable {
                                 }
 
                             } catch (FileNotFoundException e) {
-                                System.out.println("Message file " + messagePath + " not found");
+                                System.out.println("PluralMessage file " + messagePath + " not found");
                             }
                         });
 
-                for (Message message : messages) {
-                    for (String receiver: message.getTo()) {
-                        ConcurrentLinkedQueue<PreparedMessage> queue = queueMap.get(receiver.split("@")[1]);
-                        PreparedMessage preparedMessage = new PreparedMessage(
-                                message.getFrom(),
-                                receiver,
-                                message.getData()
+                for (PluralMessage pluralMessage : pluralMessages) {
+                    for (String receiver: pluralMessage.getTo()) {
+                        ConcurrentLinkedQueue<DirectMessage> queue = queueMap.get(receiver.split("@")[1]);
+                        DirectMessage directMessage = new DirectMessage(
+                                new DirectMessage.MessageBody(
+                                    pluralMessage.getFrom(),
+                                    receiver,
+                                    pluralMessage.getData()
+                                )
                         );
 
                         if (queue != null) {
-                            queue.add(preparedMessage);
+                            queue.add(directMessage);
                         } else {
-                            queueMap.get("default").add(preparedMessage);
+                            queueMap.get("default").add(directMessage);
                         }
 
-                        logger.info("Message from: " + preparedMessage.getFrom() +
-                                " to: " + preparedMessage.getTo() + " successfully added to queue");
+                        logger.debug("Message from: " + directMessage.getBody().getFrom() +
+                                " to: " + directMessage.getBody().getTo() + " successfully added to queue");
                     }
                 }
 
-                messages.clear();
+                pluralMessages.clear();
                 sleep(DELAY_MILLIS);
 
             } catch (InterruptedException e) {
