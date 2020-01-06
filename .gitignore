@@ -2,5 +2,4 @@
 /target
 /log
 /maildir/sent
-
-smtp-client.iml
+/out

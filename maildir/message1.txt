@@ -1,0 +1,15 @@
+from: <windmill5667@yandex.ru>
+to: <windmill312@yandex.ru>, <mirtonn@yandex.ru>
+data: From: windmill5667 <windmill5667@yandex.ru>
+    To: windmill312 <windmill312@yandex.ru>, mirtonn <mirtonn@yandex.ru>
+    Subject: I'm your mommy!
+    Message-ID: <af66a2e0-5937-023f-1360-b7c979f30095@local.mail.server>
+    Date: Tue, 31 Dec 2019 04:51:26 -0500
+    User-Agent: Mozilla/5.0 (X11; Linux i686; rv:60.0) Gecko/20100101
+    Thunderbird/60.9.0
+    MIME-Version: 1.0
+    Content-Type: text/plain; charset=utf-8; format=flowed
+    Content-Transfer-Encoding: 7bit
+    Content-Language: en-US
+
+    Hello from message1! Version: 1.7

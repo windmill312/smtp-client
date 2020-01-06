@@ -5,8 +5,10 @@ public interface Logger {
     void warn(String message, String... values);
     void info(String message, String... values);
     void debug(String message, String... values);
+    void trace(String message, String... values);
     boolean isErrorEnabled();
     boolean isWarnEnabled();
     boolean isInfoEnabled();
     boolean isDebugEnabled();
+    boolean isTraceEnabled();
 }

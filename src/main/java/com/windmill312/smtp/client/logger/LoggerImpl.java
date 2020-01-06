@@ -4,7 +4,11 @@ import com.windmill312.smtp.client.queue.LogQueue;
 
 import javax.annotation.Nonnull;
 
-import static com.windmill312.smtp.client.logger.LogLevel.*;
+import static com.windmill312.smtp.client.logger.LogLevel.DEBUG;
+import static com.windmill312.smtp.client.logger.LogLevel.ERROR;
+import static com.windmill312.smtp.client.logger.LogLevel.INFO;
+import static com.windmill312.smtp.client.logger.LogLevel.TRACE;
+import static com.windmill312.smtp.client.logger.LogLevel.WARN;
 
 public class LoggerImpl implements Logger {
 
@@ -47,29 +51,41 @@ public class LoggerImpl implements Logger {
     }
 
     @Override
+    public void trace(String message, String... values) {
+        if (isTraceEnabled()) {
+            logQueue.enqueue(prepareLogMessage(TRACE, message));
+        }
+    }
+
+    @Override
     public boolean isErrorEnabled() {
-        return loggerConfiguration.getLevel().getOrder() >= ERROR.getOrder();
+        return loggerConfiguration.getProperties().getLogLevel().getOrder() >= ERROR.getOrder();
     }
 
     @Override
     public boolean isWarnEnabled() {
-        return loggerConfiguration.getLevel().getOrder() >= WARN.getOrder();
+        return loggerConfiguration.getProperties().getLogLevel().getOrder() >= WARN.getOrder();
     }
 
     @Override
     public boolean isInfoEnabled() {
-        return loggerConfiguration.getLevel().getOrder() >= INFO.getOrder();
+        return loggerConfiguration.getProperties().getLogLevel().getOrder() >= INFO.getOrder();
     }
 
     @Override
     public boolean isDebugEnabled() {
-        return loggerConfiguration.getLevel().getOrder() >= DEBUG.getOrder();
+        return loggerConfiguration.getProperties().getLogLevel().getOrder() >= DEBUG.getOrder();
+    }
+
+    @Override
+    public boolean isTraceEnabled() {
+        return loggerConfiguration.getProperties().getLogLevel().getOrder() >= TRACE.getOrder();
     }
 
     @Nonnull
     private String prepareLogMessage(
             @Nonnull LogLevel logLevel,
             @Nonnull String message) {
-        return clazz.getSimpleName() + ": " + logLevel + " " + message;
+        return "[" + logLevel + "] " + clazz.getCanonicalName() + ": " + message;
     }
 }
