@@ -7,7 +7,7 @@ import com.windmill312.smtp.client.multiplexed.enums.Mode;
 public class StateMachine {
     private Table<Event, Mode, Action> table;
 
-    public StateMachine setTable(Table<Event, Mode, Action> table) {
+    StateMachine setTable(Table<Event, Mode, Action> table) {
         this.table = table;
         return this;
     }

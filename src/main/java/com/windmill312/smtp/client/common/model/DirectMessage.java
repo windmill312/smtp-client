@@ -21,9 +21,9 @@ public class DirectMessage {
         setState(this.getState().nextState());
     }
 
-    public void setState(MessageState state) {
+    private void setState(MessageState state) {
         this.state = state;
-        logger.debug("Message [" + this + "] has changed state to: " + this.getState());
+        logger.trace("Message [" + this + "] has changed state to: " + this.getState());
     }
 
     @Override

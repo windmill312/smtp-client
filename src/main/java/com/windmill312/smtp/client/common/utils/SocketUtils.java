@@ -14,6 +14,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.WritableByteChannel;
 import java.nio.charset.StandardCharsets;
+import java.util.stream.Collectors;
 
 public final class SocketUtils {
     private static final Logger logger = LoggerFactory.getLogger(SocketUtils.class);
@@ -28,6 +29,7 @@ public final class SocketUtils {
             data = data.endsWith("\r\n") ? data : data + "\r\n";
 
             byte[] bytes = data.getBytes();
+            logger.trace("Sent to server: " + data);
             channel.write(ByteBuffer.wrap(bytes));
 
             key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE);
@@ -51,7 +53,7 @@ public final class SocketUtils {
             buffer.flip();
 
             final String response = new String(buffer.array(), buffer.position(), buffer.remaining(), StandardCharsets.US_ASCII);
-            logger.debug(response);
+            logger.trace("Received from server: " + response);
 
             key.interestOps(key.interestOps() & ~SelectionKey.OP_READ);
             key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
@@ -66,17 +68,14 @@ public final class SocketUtils {
         String line;
         int result = 0;
 
+        logger.trace("Received from server: " + in.lines().collect(Collectors.joining()));
         while ((line = in.readLine()) != null) {
-            String prefix = line.substring(0, 3);
-            try {
-                result = Integer.parseInt(prefix);
-            } catch (Exception ex) {
-                logger.error("Got error while hearing smtp server: " + ex.getLocalizedMessage());
-                result = -1;
-            }
-            if (line.charAt(3) != '-') break;
-        }
+            result = getResponseCode(line);
 
+            if (line.charAt(3) != '-') {
+                break;
+            }
+        }
         return result;
     }
 
@@ -89,9 +88,10 @@ public final class SocketUtils {
         return email.substring(++position);
     }
 
-    public static void writeToBuffer(BufferedWriter wr, String text) throws IOException {
-        wr.write(text + "\r\n");
+    public static void writeToBuffer(BufferedWriter wr, String data) throws IOException {
+        wr.write(data + "\r\n");
         wr.flush();
+        logger.trace("Sent to server: " + data);
     }
 
     private static int getResponseCode(String response) {
