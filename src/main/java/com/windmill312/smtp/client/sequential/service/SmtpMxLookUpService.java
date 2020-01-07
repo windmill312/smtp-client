@@ -15,9 +15,9 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.List;
 
+import static com.windmill312.smtp.client.common.utils.MailUtils.getDomainFromEmail;
 import static com.windmill312.smtp.client.common.utils.MailUtils.getMxRecords;
-import static com.windmill312.smtp.client.common.utils.SocketUtils.getDomainFromEmail;
-import static com.windmill312.smtp.client.common.utils.SocketUtils.readFromBuffer;
+import static com.windmill312.smtp.client.common.utils.SocketUtils.getResponseCodeFromBuffer;
 import static com.windmill312.smtp.client.common.utils.SocketUtils.writeToBuffer;
 
 class SmtpMxLookUpService {
@@ -42,11 +42,11 @@ class SmtpMxLookUpService {
                     writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
                     int responseStatus;
 
-                    responseStatus = readFromBuffer(reader);
+                    responseStatus = getResponseCodeFromBuffer(reader);
                     if (responseStatus == 220) {
                         logger.info("MX record found for  <" + domain + ">: " + mxRecord);
                     } else {
-                        logger.error("Got error while connecting to " + mxRecord + ":25");
+                        logger.error("Got error while connecting to " + mxRecord + ":" + DEFAULT_SMTP_PORT);
                         continue;
                     }
 
@@ -123,13 +123,13 @@ class SmtpMxLookUpService {
     ) throws IOException {
         int responseStatus;
         writeToBuffer(writer, stepText);
-        responseStatus = readFromBuffer(reader);
+        responseStatus = getResponseCodeFromBuffer(reader);
         if (responseStatus == expectedResponseStatus) {
             if (message != null) {
                 message.nextState();
             }
         } else {
-            logger.error(errorText);
+            logger.error(errorText + ". Status: " + responseStatus);
         }
     }
 }

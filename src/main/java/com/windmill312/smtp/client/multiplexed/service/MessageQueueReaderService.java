@@ -3,10 +3,10 @@ package com.windmill312.smtp.client.multiplexed.service;
 import com.windmill312.smtp.client.common.logger.Logger;
 import com.windmill312.smtp.client.common.model.DirectMessage;
 import com.windmill312.smtp.client.common.queue.MessageQueueMap;
-import com.windmill312.smtp.client.multiplexed.ChannelsContext;
+import com.windmill312.smtp.client.multiplexed.ChannelsScope;
 import com.windmill312.smtp.client.multiplexed.statemachine.StateMachine;
-import com.windmill312.smtp.client.multiplexed.statemachine.StateMachineContextHolder;
 import com.windmill312.smtp.client.multiplexed.statemachine.StateMachineHolder;
+import com.windmill312.smtp.client.multiplexed.statemachine.StateMachineScopeHolder;
 
 import javax.annotation.Nonnull;
 import java.util.LinkedList;
@@ -14,8 +14,8 @@ import java.util.List;
 
 import static com.windmill312.smtp.client.common.logger.LoggerFactory.getLogger;
 import static com.windmill312.smtp.client.common.utils.MailUtils.getMxRecords;
-import static com.windmill312.smtp.client.multiplexed.enums.Event.CONNECT;
-import static com.windmill312.smtp.client.multiplexed.enums.Mode.ANY;
+import static com.windmill312.smtp.client.multiplexed.enums.Condition.UNDEFINED;
+import static com.windmill312.smtp.client.multiplexed.enums.Step.ATTACH;
 import static java.lang.Thread.sleep;
 
 public class MessageQueueReaderService
@@ -26,12 +26,12 @@ public class MessageQueueReaderService
     private volatile boolean stopped = false;
 
     private final MessageQueueMap<DirectMessage> messageQueueMap;
-    private final ChannelsContext channelsContext;
+    private final ChannelsScope channelsScope;
     private final StateMachine stateMachine;
 
     public MessageQueueReaderService() {
         this.messageQueueMap = MessageQueueMap.instance();
-        this.channelsContext = ChannelsContext.instance();
+        this.channelsScope = ChannelsScope.instance();
         this.stateMachine = StateMachineHolder.instance().getStateMachine();
     }
 
@@ -42,14 +42,14 @@ public class MessageQueueReaderService
             while (!stopped) {
                 messageQueueMap.getAllDomains()
                         .forEach(domain -> {
-                            if (channelsContext.isChannelReady(domain)) {
+                            if (channelsScope.isChannelReady(domain)) {
 
                                 final List<DirectMessage> messages = messageQueueMap.getAllForDomain(domain);
 
                                 if (!messages.isEmpty()) {
                                     logger.debug("Trying to send " + messages.size() + " messages for domain: " + domain);
 
-                                    channelsContext.setChannelNotReady(domain);
+                                    channelsScope.setChannelNotReady(domain);
                                     sendMessages(domain, messages);
                                 }
                             }
@@ -75,13 +75,13 @@ public class MessageQueueReaderService
             return;
         }
 
-        final StateMachineContextHolder contextHolder = new StateMachineContextHolder()
-                .setSelector(channelsContext.getSelector())
-                .setNextEvent(CONNECT)
+        final StateMachineScopeHolder contextHolder = new StateMachineScopeHolder()
+                .setSelector(channelsScope.getSelector())
+                .setNextStep(ATTACH)
                 .setDomain(domain)
                 .setMxRecord(mxRecords.get(0))
                 .setMessages(new LinkedList<>(messages));
 
-        stateMachine.raise(CONNECT, ANY, contextHolder);
+        stateMachine.raise(ATTACH, UNDEFINED, contextHolder);
     }
 }

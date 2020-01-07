@@ -14,7 +14,6 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.WritableByteChannel;
 import java.nio.charset.StandardCharsets;
-import java.util.stream.Collectors;
 
 public final class SocketUtils {
     private static final Logger logger = LoggerFactory.getLogger(SocketUtils.class);
@@ -40,7 +39,7 @@ public final class SocketUtils {
     }
 
     @SneakyThrows(IOException.class)
-    public static int readFromChannel(SelectionKey key) {
+    public static int getResponseCodeFromChannel(SelectionKey key) {
         ByteBuffer buffer = ByteBuffer.allocate(properties.getBufferSize()).order(ByteOrder.LITTLE_ENDIAN);
         try {
             ReadableByteChannel channel = (ReadableByteChannel) key.channel();
@@ -64,12 +63,12 @@ public final class SocketUtils {
         }
     }
 
-    public static int readFromBuffer(BufferedReader in) throws IOException {
+    public static int getResponseCodeFromBuffer(BufferedReader in) throws IOException {
         String line;
         int result = 0;
 
-        logger.trace("Received from server: " + in.lines().collect(Collectors.joining()));
         while ((line = in.readLine()) != null) {
+            logger.trace("Received from server: " + line);
             result = getResponseCode(line);
 
             if (line.charAt(3) != '-') {
@@ -77,15 +76,6 @@ public final class SocketUtils {
             }
         }
         return result;
-    }
-
-    public static String getDomainFromEmail(String email) {
-        int position = email.indexOf('@');
-        if (position == -1) {
-            logger.warn("Email: <" + email + "> is invalid");
-        }
-
-        return email.substring(++position);
     }
 
     public static void writeToBuffer(BufferedWriter wr, String data) throws IOException {

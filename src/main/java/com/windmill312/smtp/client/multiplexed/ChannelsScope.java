@@ -10,22 +10,22 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Getter
-public class ChannelsContext {
+public class ChannelsScope {
     private final Selector selector;
     private final Map<String, Boolean> readyChannelsMap;
 
-    private static final class ChannelsContextHolder {
-        static final ChannelsContext INSTANCE = new ChannelsContext();
+    private static final class ChannelsScopeHolder {
+        static final ChannelsScope INSTANCE = new ChannelsScope();
     }
 
     @SneakyThrows(IOException.class)
-    private ChannelsContext() {
+    private ChannelsScope() {
         this.selector = Selector.open();
         this.readyChannelsMap = new ConcurrentHashMap<>();
     }
 
-    public static ChannelsContext instance() {
-        return ChannelsContextHolder.INSTANCE;
+    public static ChannelsScope instance() {
+        return ChannelsScopeHolder.INSTANCE;
     }
 
     public boolean isChannelReady(@Nonnull String domainName) {

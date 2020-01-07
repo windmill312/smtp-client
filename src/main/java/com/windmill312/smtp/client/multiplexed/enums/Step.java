@@ -1,7 +1,7 @@
 package com.windmill312.smtp.client.multiplexed.enums;
 
-public enum Event {
-    CONNECT,
+public enum Step {
+    ATTACH,
     HELO,
     MAIL_FROM,
     RCPT_TO,

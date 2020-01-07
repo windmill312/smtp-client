@@ -17,6 +17,16 @@ import static java.util.Collections.singletonList;
 public final class MailUtils {
     private static final Logger logger = LoggerFactory.getLogger(MailUtils.class);
 
+    public static String getDomainFromEmail(String email) {
+        int position = email.indexOf('@');
+        if (position == -1) {
+            logger.warn("Email: <" + email + "> is invalid");
+            return null;
+        }
+
+        return email.substring(++position);
+    }
+
     public static List<String> getMxRecords(String domainName) {
         try {
             InitialDirContext iDirC = new InitialDirContext();

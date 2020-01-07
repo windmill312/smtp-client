@@ -1,42 +1,42 @@
 package com.windmill312.smtp.client.multiplexed.statemachine;
 
 import com.google.common.collect.Table;
-import com.windmill312.smtp.client.multiplexed.enums.Event;
-import com.windmill312.smtp.client.multiplexed.enums.Mode;
+import com.windmill312.smtp.client.multiplexed.enums.Condition;
+import com.windmill312.smtp.client.multiplexed.enums.Step;
 
 public class StateMachine {
-    private Table<Event, Mode, Action> table;
+    private Table<Step, Condition, Process> table;
 
-    StateMachine setTable(Table<Event, Mode, Action> table) {
+    StateMachine setTable(Table<Step, Condition, Process> table) {
         this.table = table;
         return this;
     }
 
-    public void raise(Event event, Mode status, StateMachineContextHolder contextHolder) {
-        new StateMachineContextImpl(contextHolder).raise(event, status);
+    public void raise(Step step, Condition status, StateMachineScopeHolder contextHolder) {
+        new StateMachineScopeImpl(contextHolder).enhance(step, status);
     }
 
-    private StateMachineContextImpl createContext(StateMachineContextHolder contextHolder) {
-        return new StateMachineContextImpl(contextHolder);
+    private StateMachineScopeImpl createContext(StateMachineScopeHolder contextHolder) {
+        return new StateMachineScopeImpl(contextHolder);
     }
 
-    private class StateMachineContextImpl
-            implements StateMachineContext {
+    private class StateMachineScopeImpl
+            implements StateMachineScope {
 
-        private final StateMachineContextHolder contextHolder;
+        private final StateMachineScopeHolder contextHolder;
 
-        private StateMachineContextImpl(StateMachineContextHolder contextHolder) {
+        private StateMachineScopeImpl(StateMachineScopeHolder contextHolder) {
             this.contextHolder = contextHolder;
         }
 
         @Override
-        public void raise(Event event, Mode mode) {
-            final Action action = table.get(event, mode);
-            action.execute(createContext(contextHolder));
+        public void enhance(Step step, Condition condition) {
+            final Process process = table.get(step, condition);
+            process.execute(createContext(contextHolder));
         }
 
         @Override
-        public StateMachineContextHolder getContextHolder() {
+        public StateMachineScopeHolder getContextHolder() {
             return contextHolder;
         }
     }

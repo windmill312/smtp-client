@@ -1,19 +1,19 @@
 package com.windmill312.smtp.client.multiplexed.statemachine;
 
-import com.windmill312.smtp.client.multiplexed.statemachine.actions.ActionFactory;
+import com.windmill312.smtp.client.multiplexed.statemachine.processes.ProcessFactory;
 import lombok.Getter;
 
-import static com.windmill312.smtp.client.multiplexed.enums.Event.CONNECT;
-import static com.windmill312.smtp.client.multiplexed.enums.Event.DATA;
-import static com.windmill312.smtp.client.multiplexed.enums.Event.DATA_REQUEST;
-import static com.windmill312.smtp.client.multiplexed.enums.Event.FINALIZE;
-import static com.windmill312.smtp.client.multiplexed.enums.Event.HELO;
-import static com.windmill312.smtp.client.multiplexed.enums.Event.MAIL_FROM;
-import static com.windmill312.smtp.client.multiplexed.enums.Event.QUIT;
-import static com.windmill312.smtp.client.multiplexed.enums.Event.RCPT_TO;
-import static com.windmill312.smtp.client.multiplexed.enums.Mode.ANY;
-import static com.windmill312.smtp.client.multiplexed.enums.Mode.READ;
-import static com.windmill312.smtp.client.multiplexed.enums.Mode.WRITE;
+import static com.windmill312.smtp.client.multiplexed.enums.Condition.READ;
+import static com.windmill312.smtp.client.multiplexed.enums.Condition.UNDEFINED;
+import static com.windmill312.smtp.client.multiplexed.enums.Condition.WRITE;
+import static com.windmill312.smtp.client.multiplexed.enums.Step.ATTACH;
+import static com.windmill312.smtp.client.multiplexed.enums.Step.DATA;
+import static com.windmill312.smtp.client.multiplexed.enums.Step.DATA_REQUEST;
+import static com.windmill312.smtp.client.multiplexed.enums.Step.FINALIZE;
+import static com.windmill312.smtp.client.multiplexed.enums.Step.HELO;
+import static com.windmill312.smtp.client.multiplexed.enums.Step.MAIL_FROM;
+import static com.windmill312.smtp.client.multiplexed.enums.Step.QUIT;
+import static com.windmill312.smtp.client.multiplexed.enums.Step.RCPT_TO;
 
 public class StateMachineHolder {
     @Getter
@@ -24,30 +24,30 @@ public class StateMachineHolder {
     }
 
     private StateMachineHolder() {
-        final ActionFactory actionFactory = new ActionFactory();
+        final ProcessFactory processFactory = new ProcessFactory();
         stateMachine = new StateMachineBuilder()
-                .when(CONNECT, ANY).act(actionFactory.getAction(CONNECT, ANY))
-                .when(CONNECT, READ).act(actionFactory.getAction(CONNECT, READ))
+                .when(ATTACH, UNDEFINED).act(processFactory.getProcess(ATTACH, UNDEFINED))
+                .when(ATTACH, READ).act(processFactory.getProcess(ATTACH, READ))
 
-                .when(HELO, WRITE).act(actionFactory.getAction(HELO, WRITE))
-                .when(HELO, READ).act(actionFactory.getAction(HELO, READ))
+                .when(HELO, WRITE).act(processFactory.getProcess(HELO, WRITE))
+                .when(HELO, READ).act(processFactory.getProcess(HELO, READ))
 
-                .when(MAIL_FROM, WRITE).act(actionFactory.getAction(MAIL_FROM, WRITE))
-                .when(MAIL_FROM, READ).act(actionFactory.getAction(MAIL_FROM, READ))
+                .when(MAIL_FROM, WRITE).act(processFactory.getProcess(MAIL_FROM, WRITE))
+                .when(MAIL_FROM, READ).act(processFactory.getProcess(MAIL_FROM, READ))
 
-                .when(RCPT_TO, WRITE).act(actionFactory.getAction(RCPT_TO, WRITE))
-                .when(RCPT_TO, READ).act(actionFactory.getAction(RCPT_TO, READ))
+                .when(RCPT_TO, WRITE).act(processFactory.getProcess(RCPT_TO, WRITE))
+                .when(RCPT_TO, READ).act(processFactory.getProcess(RCPT_TO, READ))
 
-                .when(DATA_REQUEST, WRITE).act(actionFactory.getAction(DATA_REQUEST, WRITE))
-                .when(DATA_REQUEST, READ).act(actionFactory.getAction(DATA_REQUEST, READ))
+                .when(DATA_REQUEST, WRITE).act(processFactory.getProcess(DATA_REQUEST, WRITE))
+                .when(DATA_REQUEST, READ).act(processFactory.getProcess(DATA_REQUEST, READ))
 
-                .when(DATA, WRITE).act(actionFactory.getAction(DATA, WRITE))
-                .when(DATA, READ).act(actionFactory.getAction(DATA, READ))
+                .when(DATA, WRITE).act(processFactory.getProcess(DATA, WRITE))
+                .when(DATA, READ).act(processFactory.getProcess(DATA, READ))
 
-                .when(QUIT, WRITE).act(actionFactory.getAction(QUIT, WRITE))
-                .when(QUIT, READ).act(actionFactory.getAction(QUIT, READ))
+                .when(QUIT, WRITE).act(processFactory.getProcess(QUIT, WRITE))
+                .when(QUIT, READ).act(processFactory.getProcess(QUIT, READ))
 
-                .when(FINALIZE, ANY).act(actionFactory.getAction(FINALIZE, ANY))
+                .when(FINALIZE, UNDEFINED).act(processFactory.getProcess(FINALIZE, UNDEFINED))
                 .build();
     }
 

@@ -1,8 +1,8 @@
 package com.windmill312.smtp.client.multiplexed.service;
 
 import com.windmill312.smtp.client.common.logger.Logger;
-import com.windmill312.smtp.client.multiplexed.ChannelsContext;
-import com.windmill312.smtp.client.multiplexed.statemachine.StateMachineContext;
+import com.windmill312.smtp.client.multiplexed.ChannelsScope;
+import com.windmill312.smtp.client.multiplexed.statemachine.StateMachineScope;
 
 import javax.annotation.Nonnull;
 import java.nio.channels.SelectionKey;
@@ -12,9 +12,9 @@ import java.util.Iterator;
 import java.util.Set;
 
 import static com.windmill312.smtp.client.common.logger.LoggerFactory.getLogger;
-import static com.windmill312.smtp.client.multiplexed.enums.Event.CONNECT;
-import static com.windmill312.smtp.client.multiplexed.enums.Mode.READ;
-import static com.windmill312.smtp.client.multiplexed.enums.Mode.WRITE;
+import static com.windmill312.smtp.client.multiplexed.enums.Condition.READ;
+import static com.windmill312.smtp.client.multiplexed.enums.Condition.WRITE;
+import static com.windmill312.smtp.client.multiplexed.enums.Step.ATTACH;
 
 public class MessageSenderService implements Runnable, AutoCloseable {
 
@@ -24,7 +24,7 @@ public class MessageSenderService implements Runnable, AutoCloseable {
     private final Selector selector;
 
     public MessageSenderService() {
-        this.selector = ChannelsContext.instance().getSelector();
+        this.selector = ChannelsScope.instance().getSelector();
     }
 
     @Override
@@ -74,8 +74,8 @@ public class MessageSenderService implements Runnable, AutoCloseable {
 
                 key.interestOps(key.interestOps() | SelectionKey.OP_READ);
 
-                StateMachineContext context = (StateMachineContext) key.attachment();
-                context.raise(CONNECT, READ);
+                StateMachineScope context = (StateMachineScope) key.attachment();
+                context.enhance(ATTACH, READ);
             }
 
         } catch (Exception e) {
@@ -85,12 +85,12 @@ public class MessageSenderService implements Runnable, AutoCloseable {
     }
 
     private void write(@Nonnull SelectionKey key) {
-        StateMachineContext context = (StateMachineContext) key.attachment();
-        context.raise(context.getContextHolder().getNextEvent(), WRITE);
+        StateMachineScope context = (StateMachineScope) key.attachment();
+        context.enhance(context.getContextHolder().getNextStep(), WRITE);
     }
 
     private void read(@Nonnull SelectionKey key) {
-        StateMachineContext context = (StateMachineContext) key.attachment();
-        context.raise(context.getContextHolder().getNextEvent(), READ);
+        StateMachineScope context = (StateMachineScope) key.attachment();
+        context.enhance(context.getContextHolder().getNextStep(), READ);
     }
 }
