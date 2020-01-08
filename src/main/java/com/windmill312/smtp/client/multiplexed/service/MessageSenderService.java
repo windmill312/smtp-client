@@ -23,7 +23,7 @@ public class MessageSenderService implements Runnable, AutoCloseable {
 
     private final Selector selector;
 
-    public MessageSenderService() {
+    MessageSenderService() {
         this.selector = ChannelsScope.instance().getSelector();
     }
 
@@ -67,7 +67,9 @@ public class MessageSenderService implements Runnable, AutoCloseable {
     private void connect(@Nonnull SelectionKey key) {
         try {
             SocketChannel socketChannel = (SocketChannel) key.channel();
-            socketChannel.finishConnect();
+            if (socketChannel.isConnectionPending()) {
+                socketChannel.finishConnect();
+            }
 
             if (socketChannel.isConnected()) {
                 Thread.sleep(1000);
@@ -79,7 +81,8 @@ public class MessageSenderService implements Runnable, AutoCloseable {
             }
 
         } catch (Exception e) {
-            logger.error("Failed to perform connection. Reason: " + e.getMessage());
+            e.printStackTrace();
+            logger.error("Failed to perform connection. Reason: " + e.getLocalizedMessage());
             key.cancel();
         }
     }

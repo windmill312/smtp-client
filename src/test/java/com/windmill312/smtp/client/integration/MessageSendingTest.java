@@ -27,7 +27,7 @@ import java.util.Properties;
 
 public class MessageSendingTest {
     private static final ApplicationProperties properties = ApplicationProperties.instance();
-    public static final String SUBJECT_HEADER = "I'm a test!";
+    private static final String SUBJECT_HEADER = "I'm a test!";
 
     @Test
     public void checkSequentialMessageSending() {
