@@ -141,13 +141,13 @@ public class MessageSendingTest {
             return Arrays.asList(emailFolder.getMessages());
     }
 
-    public static final String TEST_MESSAGE = "from: <windmill5667@yandex.ru>\n" +
+    private static final String TEST_MESSAGE = "from: <windmill5667@yandex.ru>\n" +
             "to: <test5667@yandex.ru>\n" +
             "data: From: windmill5667 <windmill5667@yandex.ru>\n" +
             "To: test5667 <test5667@yandex.ru>\n" +
             "Subject: " + SUBJECT_HEADER + "\n" +
             "Message-ID: <af66a2e0-5937-023f-1360-b7c979f30095@local.mail.server>\n" +
-            "Date: Tue, 7 Jan 2020 14:30:26 -0300\n" +
+            "Date: Thu, 9 Jan 2020 14:30:26 -0300\n" +
             "User-Agent: Mozilla/5.0 (X11; Linux i686; rv:60.0) Gecko/20100101\n" +
             "Thunderbird/60.9.0\n" +
             "MIME-Version: 1.0\n" +

@@ -5,36 +5,31 @@ import com.windmill312.smtp.client.multiplexed.statemachine.Process;
 import com.windmill312.smtp.client.multiplexed.statemachine.StateMachineScope;
 import com.windmill312.smtp.client.multiplexed.statemachine.StateMachineScopeHolder;
 
-import java.net.InetSocketAddress;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.SocketChannel;
-
 import static com.windmill312.smtp.client.common.logger.LoggerFactory.getLogger;
+import static com.windmill312.smtp.client.common.utils.SocketUtils.getResponseCodeFromChannel;
 import static com.windmill312.smtp.client.multiplexed.enums.Condition.UNDEFINED;
 import static com.windmill312.smtp.client.multiplexed.enums.Step.FINALIZE;
+import static com.windmill312.smtp.client.multiplexed.enums.Step.HELO;
 
-class ConnectProcess
-        implements Process {
-    private static final Logger logger = getLogger(ConnectProcess.class);
-
-    private static final int DEFAULT_SOCKET_PORT = 25;
+class AttachReadProcess implements Process {
+    private static final Logger logger = getLogger(AttachReadProcess.class);
 
     @Override
     public void execute(StateMachineScope context) {
         try {
             final StateMachineScopeHolder contextHolder = context.getContextHolder();
 
-            logger.debug("Execute ATTACH action for " + contextHolder.getMxRecord());
+            logger.debug("Execute ATTACHING READ action for " + contextHolder.getMxRecord());
 
-            SocketChannel channel = SocketChannel.open();
-            channel.configureBlocking(false);
+            int status = getResponseCodeFromChannel(contextHolder.getSelectionKey());
 
-            SelectionKey selectionKey = channel.register(contextHolder.getSelector(), SelectionKey.OP_CONNECT);
-            selectionKey.attach(context);
-            contextHolder.setSelectionKey(selectionKey);
+            if (status != 220) {
+                logger.error("Failed to attach to MX server " + contextHolder.getMxRecord() + ", status " + status);
+                context.enhance(FINALIZE, UNDEFINED);
+                return;
+            }
 
-            logger.debug("Trying to connect to " + contextHolder.getMxRecord() + "...");
-            channel.connect(new InetSocketAddress(contextHolder.getMxRecord(), DEFAULT_SOCKET_PORT));
+            contextHolder.setNextStep(HELO);
 
         } catch (Exception e) {
             logger.error(e.getMessage());

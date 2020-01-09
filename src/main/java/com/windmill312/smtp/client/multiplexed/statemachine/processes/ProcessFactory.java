@@ -8,8 +8,8 @@ import javax.annotation.Nonnull;
 
 public class ProcessFactory {
 
-    private final ConnectProcess connectProcess;
-    private final ConnectReadProcess connectReadProcess;
+    private final AttachProcess attachProcess;
+    private final AttachReadProcess attachReadProcess;
     private final HeloWriteProcess heloWriteProcess;
     private final HeloReadProcess heloReadProcess;
     private final MailFromWriteProcess mailFromWriteProcess;
@@ -25,8 +25,8 @@ public class ProcessFactory {
     private final FinalProcess finalProcess;
 
     public ProcessFactory() {
-        connectProcess = new ConnectProcess();
-        connectReadProcess = new ConnectReadProcess();
+        attachProcess = new AttachProcess();
+        attachReadProcess = new AttachReadProcess();
         heloWriteProcess = new HeloWriteProcess();
         heloReadProcess = new HeloReadProcess();
         mailFromWriteProcess = new MailFromWriteProcess();
@@ -45,7 +45,7 @@ public class ProcessFactory {
     public Process getProcess(@Nonnull Step step, @Nonnull Condition condition) {
         switch (step) {
             case ATTACH:
-                return condition == Condition.READ ? connectReadProcess : connectProcess;
+                return condition == Condition.READ ? attachReadProcess : attachProcess;
             case HELO:
                 return condition == Condition.READ ? heloReadProcess : heloWriteProcess;
             case MAIL_FROM:
