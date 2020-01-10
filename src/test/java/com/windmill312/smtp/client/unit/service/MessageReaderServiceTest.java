@@ -27,7 +27,7 @@ public class MessageReaderServiceTest {
     @Test
     @SneakyThrows(InterruptedException.class)
     public void testMessageReadingFromFile() {
-        createMessageFile(EXTERNAL_MESSAGE);
+        createMessageFile(EXTERNAL_MESSAGE, TEST_FILENAME);
 
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         executorService.execute(new MessageReaderService());
@@ -41,7 +41,7 @@ public class MessageReaderServiceTest {
     @Test
     @SneakyThrows(InterruptedException.class)
     public void checkInternalMessageSending() {
-        createMessageFile(INTERNAL_MESSAGE);
+        createMessageFile(INTERNAL_MESSAGE, TEST_FILENAME);
         String intenalDomain = "bestmailer.ru";
 
         ExecutorService executorService = Executors.newSingleThreadExecutor();

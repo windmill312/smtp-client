@@ -1,0 +1,15 @@
+from: <egor@local.mail.server>
+to: <windmill5667@yandex.ru>, <mirtonn@yandex.ru>
+data: To: mirtonn@yandex.ru, windmill5667@yandex.ru
+From: egor <egor@local.mail.server>
+Subject: Test1
+Message-ID: <f437f222-d396-3b58-ac33-0016169766b5@local.mail.server>
+Date: Fri, 10 Jan 2020 10:31:03 -0500
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:60.0) Gecko/20100101
+ Thunderbird/60.9.0
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
+Content-Language: en-US
+
+Hello!

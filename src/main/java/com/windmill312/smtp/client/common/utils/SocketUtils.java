@@ -25,14 +25,31 @@ public final class SocketUtils {
 
             data = data.endsWith("\r\n") ? data : data + "\r\n";
 
-            byte[] bytes = data.getBytes();
-            logger.trace("Sent to server: " + data);
-            channel.write(ByteBuffer.wrap(bytes));
+            int batchSize = properties.getBatchSize();
+            if (data.length() > batchSize) {
+                for (int i = 0; i < data.length(); i += batchSize) {
+                    String subStr;
+                    if (data.length() < i + batchSize) {
+                        subStr = data.substring(i);
+                    } else {
+                        subStr = data.substring(i, i + batchSize);
+                    }
+                    logger.trace("Sent to server: " + subStr);
+                    channel.write(ByteBuffer.wrap(subStr.getBytes()));
+                    Thread.sleep(100);
+                }
+            } else {
+                byte[] bytes = data.getBytes();
+                logger.trace("Sent to server: " + data);
+                channel.write(ByteBuffer.wrap(bytes));
+            }
 
             key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE);
             key.interestOps(key.interestOps() | SelectionKey.OP_READ);
         } catch (IOException e) {
             logger.error("Got error while writing to buffer: " + e.getLocalizedMessage());
+        } catch (InterruptedException e) {
+            logger.error(e.getMessage());
         } finally {
             buffer.clear();
         }
