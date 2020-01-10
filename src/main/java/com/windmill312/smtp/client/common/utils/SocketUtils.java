@@ -3,7 +3,6 @@ package com.windmill312.smtp.client.common.utils;
 import com.windmill312.smtp.client.common.config.ApplicationProperties;
 import com.windmill312.smtp.client.common.logger.Logger;
 import com.windmill312.smtp.client.common.logger.LoggerFactory;
-import lombok.SneakyThrows;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -19,7 +18,6 @@ public final class SocketUtils {
     private static final Logger logger = LoggerFactory.getLogger(SocketUtils.class);
     private static final ApplicationProperties properties = ApplicationProperties.instance();
 
-    @SneakyThrows(IOException.class)
     public static void writeToChannel(SelectionKey key, String data) {
         ByteBuffer buffer = ByteBuffer.allocate(properties.getBufferSize()).order(ByteOrder.LITTLE_ENDIAN);
         try {
@@ -33,13 +31,14 @@ public final class SocketUtils {
 
             key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE);
             key.interestOps(key.interestOps() | SelectionKey.OP_READ);
+        } catch (IOException e) {
+            logger.error("Got error while writing to buffer: " + e.getLocalizedMessage());
         } finally {
             buffer.clear();
         }
     }
 
-    @SneakyThrows(IOException.class)
-    public static int getResponseCodeFromChannel(SelectionKey key) {
+    public static int getResponseCodeFromChannel(SelectionKey key) throws IOException {
         ByteBuffer buffer = ByteBuffer.allocate(properties.getBufferSize()).order(ByteOrder.LITTLE_ENDIAN);
         try {
             ReadableByteChannel channel = (ReadableByteChannel) key.channel();

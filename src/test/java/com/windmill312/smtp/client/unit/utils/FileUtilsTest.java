@@ -1,7 +1,6 @@
 package com.windmill312.smtp.client.unit.utils;
 
 import com.windmill312.smtp.client.common.utils.FileUtils;
-import lombok.SneakyThrows;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -14,15 +13,19 @@ import java.nio.file.Paths;
 public class FileUtilsTest {
 
     @Test
-    @SneakyThrows({NullPointerException.class, IOException.class})
-    public void getOrCreateSentDirectory() {
+    public void getOrCreateDirectory() {
+        String sentFolderName = "sent";
         String mailDirectory = getClass().getClassLoader().getResource("").getPath();
-        Path sentDirectoryPath = Paths.get(mailDirectory + File.separator + "sent");
+        Path sentDirectoryPath = Paths.get(mailDirectory + File.separator + sentFolderName);
 
-        String returnPath = FileUtils.getOrCreateSentDirectory(mailDirectory);
+        String returnPath = FileUtils.getOrCreateFolder(sentDirectoryPath.toString());
         Assert.assertEquals(returnPath, sentDirectoryPath.toString());
         Assert.assertTrue(Files.exists(sentDirectoryPath));
 
-        Files.deleteIfExists(sentDirectoryPath);
+        try {
+            Files.deleteIfExists(sentDirectoryPath);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
     }
 }
