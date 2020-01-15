@@ -17,46 +17,30 @@ import java.nio.charset.StandardCharsets;
 public final class SocketUtils {
     private static final Logger logger = LoggerFactory.getLogger(SocketUtils.class);
     private static final ApplicationProperties properties = ApplicationProperties.instance();
+    private static final ByteBuffer buffer = ByteBuffer.allocate(properties.getBufferSize()).order(ByteOrder.LITTLE_ENDIAN);
 
-    public static void writeToChannel(SelectionKey key, String data) {
-        ByteBuffer buffer = ByteBuffer.allocate(properties.getBufferSize()).order(ByteOrder.LITTLE_ENDIAN);
+    public static void writeToChannel(SelectionKey key, String data, boolean hasMoreData) {
         try {
             WritableByteChannel channel = (WritableByteChannel) key.channel();
 
             data = data.endsWith("\r\n") ? data : data + "\r\n";
 
-            int batchSize = properties.getBatchSize();
-            if (data.length() > batchSize) {
-                for (int i = 0; i < data.length(); i += batchSize) {
-                    String subStr;
-                    if (data.length() < i + batchSize) {
-                        subStr = data.substring(i);
-                    } else {
-                        subStr = data.substring(i, i + batchSize);
-                    }
-                    logger.trace("Sent to server: " + subStr);
-                    channel.write(ByteBuffer.wrap(subStr.getBytes()));
-                    Thread.sleep(100);
-                }
-            } else {
-                byte[] bytes = data.getBytes();
-                logger.trace("Sent to server: " + data);
-                channel.write(ByteBuffer.wrap(bytes));
-            }
+            byte[] bytes = data.getBytes();
+            logger.trace("Sent to server: " + data);
+            channel.write(ByteBuffer.wrap(bytes));
 
-            key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE);
-            key.interestOps(key.interestOps() | SelectionKey.OP_READ);
+            if (!hasMoreData) {
+                key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE);
+                key.interestOps(key.interestOps() | SelectionKey.OP_READ);
+            }
         } catch (IOException e) {
             logger.error("Got error while writing to buffer: " + e.getLocalizedMessage());
-        } catch (InterruptedException e) {
-            logger.error(e.getMessage());
         } finally {
             buffer.clear();
         }
     }
 
     public static int getResponseCodeFromChannel(SelectionKey key) throws IOException {
-        ByteBuffer buffer = ByteBuffer.allocate(properties.getBufferSize()).order(ByteOrder.LITTLE_ENDIAN);
         try {
             ReadableByteChannel channel = (ReadableByteChannel) key.channel();
 

@@ -27,6 +27,9 @@ public final class ApplicationProperties {
     @Getter
     private final int batchSize;
 
+    @Getter
+    private final String internalDomain;
+
     public static final class ApplicationPropertiesHolder {
         static final ApplicationProperties instance = new ApplicationProperties();
     }
@@ -42,6 +45,7 @@ public final class ApplicationProperties {
         }
 
         this.mailDir = appProps.getProperty("mail.dir");
+        this.internalDomain = appProps.getProperty("mail.internal.domain");
         this.logPath = appProps.getProperty("logger.file-path");
         this.logLevel = LogLevel.valueOf(appProps.getProperty("logger.level"));
         this.socketTimeoutMs = Integer.valueOf(appProps.getProperty("socket.timeout.ms"));

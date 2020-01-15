@@ -20,7 +20,7 @@ public class QuitWriteProcess implements Process {
 
             logger.debug("Execute QUIT WRITE action for " + contextHolder.getMxRecord());
 
-            writeToChannel(contextHolder.getSelectionKey(), "QUIT");
+            writeToChannel(contextHolder.getSelectionKey(), "QUIT", false);
 
         } catch (Exception e) {
             logger.error(e.getMessage());

@@ -10,12 +10,10 @@ import com.windmill312.smtp.client.sequential.model.MessageBatch;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static com.windmill312.smtp.client.sequential.service.SmtpMxLookUpService.sendBatch;
-import static java.lang.Thread.sleep;
 
 public class MessageSenderService implements Runnable, AutoCloseable {
 
     private static final Logger logger = LoggerFactory.getLogger(MessageSenderService.class);
-    private static final Long DELAY_MILLIS = 1000L;
     private static final int BATCH_SIZE = 5;
     private volatile boolean stopped = false;
 
@@ -53,7 +51,7 @@ public class MessageSenderService implements Runnable, AutoCloseable {
                         }
                     }
                 }
-                sleep(DELAY_MILLIS);
+                wait();
             }
         } catch (InterruptedException e) {
             logger.warn("MessageSender thread is interrupted: " + e.getLocalizedMessage());

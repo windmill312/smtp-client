@@ -3,7 +3,7 @@ package com.windmill312.smtp.client.common.logger;
 import javax.annotation.Nonnull;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class LogQueue implements QueueExchange<String> {
+public class LogQueue {
     private final ConcurrentLinkedQueue<String> queue;
 
     public static final class LogQueueHolder {
@@ -18,11 +18,15 @@ public class LogQueue implements QueueExchange<String> {
         return LogQueueHolder.INSTANCE;
     }
 
-    public void enqueue(@Nonnull String item) {
+    synchronized void add(@Nonnull String item) {
         queue.add(item);
+        notifyAll();
     }
 
-    public String dequeue() {
+    synchronized String poll() throws InterruptedException {
+        while (queue.isEmpty()) {
+            wait();
+        }
         return queue.poll();
     }
 }

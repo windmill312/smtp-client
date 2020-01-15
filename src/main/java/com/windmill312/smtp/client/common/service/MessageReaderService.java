@@ -11,106 +11,134 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardWatchEventKinds;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.sun.jmx.mbeanserver.Util.cast;
 import static com.windmill312.smtp.client.common.utils.FileUtils.copyFile;
 import static com.windmill312.smtp.client.common.utils.FileUtils.deleteFile;
 import static com.windmill312.smtp.client.common.utils.MailUtils.getDomainFromEmail;
-import static java.lang.Thread.sleep;
+import static java.nio.file.StandardWatchEventKinds.OVERFLOW;
 
 public class MessageReaderService implements Runnable, AutoCloseable {
 
     private static final Logger logger = LoggerFactory.getLogger(MessageReaderService.class);
-    private static final String INTERNAL_DOMAIN = "bestmailer.ru";
-    private final MessageQueueMap queueMap;
-    private final ApplicationProperties instance = ApplicationProperties.instance();
-
-    private static final Long DELAY_MILLIS = 10000L;
-    private volatile boolean stopped = false;
+    private String internalDomain;
+    private MessageQueueMap queueMap;
+    private ApplicationProperties properties;
+    private static final String sentFolderName = "sent";
+    private static final String myFolderName = "my";
+    private boolean isStopped = false;
 
     public MessageReaderService() {
         this.queueMap = MessageQueueMap.instance();
+        this.properties = ApplicationProperties.instance();
+        this.internalDomain = properties.getInternalDomain();
     }
 
     @Override
-    public void close() {
-        stopped = true;
+    public void close() throws Exception {
+        this.isStopped = true;
     }
 
     @Override
     public void run() {
         logger.info("MessageReader thread started");
-        List<PluralMessage> messages;
-        String sentFolderName = "sent";
-        String myFolderName = "my";
+        prepareExistsMessageFiles();
+        startDirectoryPolling();
+    }
 
-        while (!stopped) {
-            try {
-                messages = readMessageFiles();
+    private void startDirectoryPolling() {
+        try {
+            WatchService watchService = FileSystems.getDefault().newWatchService();
+            Path path = Paths.get(properties.getMailDir());
+            path.register(watchService, StandardWatchEventKinds.ENTRY_CREATE);
 
-                for (PluralMessage pluralMessage : messages) {
-                    for (String receiver: pluralMessage.getTo()) {
-                        String domain = getDomainFromEmail(receiver);
-                        if (domain == null) {
-                            logger.error("Domain of: " + receiver + " is invalid");
-                            continue;
-                        }
+            WatchKey key;
+            while ((key = watchService.take()) != null || !isStopped) {
+                for (WatchEvent<?> event : key.pollEvents()) {
+                    if (event.kind() != OVERFLOW) {
+                        logger.trace("Handle create event for: " + event.context());
+                        WatchEvent<Path> messageFileName = cast(event);
 
-                        DirectMessage directMessage = new DirectMessage()
-                            .setFrom(pluralMessage.getFrom())
-                            .setTo(receiver)
-                            .setData(pluralMessage.getData());
-
-                        Path destinationFileName;
-                        if (domain.equals(INTERNAL_DOMAIN)) {
-                            destinationFileName = Paths.get(
-                                    instance.getMailDir() +
-                                            File.separator +
-                                            myFolderName +
-                                            File.separator +
-                                            pluralMessage.getPath().getFileName()
-                            );
-                            logger.debug("Message from: " + directMessage.getFrom() +
-                                    " to: " + directMessage.getTo() + " successfully added to internal message directory");
-                        } else {
-                            destinationFileName = Paths.get(
-                                    instance.getMailDir() +
-                                            File.separator +
-                                            sentFolderName +
-                                            File.separator +
-                                            pluralMessage.getPath().getFileName()
-                            );
-                            queueMap.putForDomain(domain, directMessage);
-                            logger.debug("Message from: " + directMessage.getFrom() +
-                                    " to: " + directMessage.getTo() + " successfully added to queue");
-                        }
-                        copyFile(pluralMessage.getPath().toFile(), destinationFileName);
+                        Path messageFilePath = Paths.get(properties.getMailDir() + File.separator + messageFileName.context());
+                        PluralMessage pluralMessage = getMessageFromFile(messageFilePath.toFile());
+                        addToQueue(pluralMessage);
                     }
-                    deleteFile(pluralMessage.getPath().toFile());
                 }
-
-                messages.clear();
-                sleep(DELAY_MILLIS);
-
-            } catch (IOException e) {
-                logger.error("Can't get access to message file: " + e.getLocalizedMessage());
-                close();
-            } catch (InterruptedException e) {
-                logger.info("MessageReader thread is interrupted");
+                key.reset();
             }
+        } catch (IOException ex) {
+            logger.error("Got error while directory processing: " + ex.getLocalizedMessage());
+            ex.printStackTrace();
+        } catch (InterruptedException e) {
+            logger.warn("MessageReaderService thread is stopped");
+        }
+    }
+
+    private void prepareExistsMessageFiles() {
+        try {
+            List<PluralMessage> pluralMessages = readMessageFiles();
+            pluralMessages.forEach(this::addToQueue);
+        } catch (IOException ex) {
+            logger.error("Got error while parsing existing files: " + ex.getLocalizedMessage());
+        }
+    }
+
+    private void addToQueue(PluralMessage pluralMessage) {
+        for (String receiver : pluralMessage.getTo()) {
+            String domain = getDomainFromEmail(receiver);
+            if (domain == null) {
+                logger.error("Domain of: " + receiver + " is invalid");
+                continue;
+            }
+
+            DirectMessage directMessage = new DirectMessage()
+                    .setFrom(pluralMessage.getFrom())
+                    .setTo(receiver)
+                    .setData(pluralMessage.getData());
+
+            Path destinationFileName;
+            if (domain.equals(internalDomain)) {
+                destinationFileName = Paths.get(
+                        properties.getMailDir() +
+                                File.separator +
+                                myFolderName +
+                                File.separator +
+                                pluralMessage.getPath().getFileName()
+                );
+                logger.debug("Message from: " + directMessage.getFrom() +
+                        " to: " + directMessage.getTo() + " successfully added to internal message directory");
+            } else {
+                destinationFileName = Paths.get(
+                        properties.getMailDir() +
+                                File.separator +
+                                sentFolderName +
+                                File.separator +
+                                pluralMessage.getPath().getFileName()
+                );
+                queueMap.putForDomain(domain, directMessage);
+                logger.debug("Message from: " + directMessage.getFrom() +
+                        " to: " + directMessage.getTo() + " successfully added to queue");
+            }
+            copyFile(pluralMessage.getPath().toFile(), destinationFileName);
         }
 
-        System.out.println("MessageReader thread is stopped");
+        deleteFile(pluralMessage.getPath().toFile());
     }
 
     private List<PluralMessage> readMessageFiles() throws IOException {
         List<PluralMessage> messages = new ArrayList<>();
-        Files.walk(Paths.get(instance.getMailDir()), 1)
+        Files.walk(Paths.get(properties.getMailDir()), 1)
                 .filter(Files::isRegularFile)
                 .forEach(messagePath -> {
                     try {

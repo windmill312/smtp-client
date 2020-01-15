@@ -20,7 +20,11 @@ public class RcptToWriteProcess implements Process {
 
             logger.debug("Execute RCPT_TO WRITE action for " + contextHolder.getMxRecord());
 
-            writeToChannel(contextHolder.getSelectionKey(), "RCPT TO: " + contextHolder.getMessages().peek().getTo());
+            writeToChannel(
+                    contextHolder.getSelectionKey(),
+                    "RCPT TO: " + contextHolder.getMessages().peek().getTo(),
+                    false
+            );
 
         } catch (Exception e) {
             logger.error(e.getMessage());

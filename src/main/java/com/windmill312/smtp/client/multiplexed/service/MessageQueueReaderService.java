@@ -16,7 +16,6 @@ import static com.windmill312.smtp.client.common.logger.LoggerFactory.getLogger;
 import static com.windmill312.smtp.client.common.utils.MailUtils.getMxRecords;
 import static com.windmill312.smtp.client.multiplexed.enums.Condition.UNDEFINED;
 import static com.windmill312.smtp.client.multiplexed.enums.Step.ATTACH;
-import static java.lang.Thread.sleep;
 
 public class MessageQueueReaderService
         implements Runnable, AutoCloseable {
@@ -54,8 +53,6 @@ public class MessageQueueReaderService
                                 }
                             }
                         });
-
-                sleep(DELAY_MILLIS);
             }
         } catch (InterruptedException exception) {
             logger.error("MessageQueueReaderService thread is interrupted");

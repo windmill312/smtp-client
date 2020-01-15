@@ -11,7 +11,10 @@ public class MessageQueueMap<T> {
 
     private final Map<String, ConcurrentLinkedQueue<T>> messageQueueMap;
 
-    public Set<String> getAllDomains() {
+    public synchronized Set<String> getAllDomains() throws InterruptedException {
+        while (messageQueueMap.isEmpty()) {
+            wait();
+        }
         return this.messageQueueMap.keySet();
     }
 
@@ -31,7 +34,7 @@ public class MessageQueueMap<T> {
         return MessageQueueMapHolder.INSTANCE;
     }
 
-    public void putForDomain(String domain, T message) {
+    public synchronized void putForDomain(String domain, T message) {
         if (this.messageQueueMap.containsKey(domain)) {
             this.messageQueueMap.get(domain).add(message);
         } else {
@@ -39,6 +42,7 @@ public class MessageQueueMap<T> {
             queue.add(message);
             this.messageQueueMap.put(domain, queue);
         }
+        notifyAll();
     }
 
     public ConcurrentLinkedQueue<T> get(String key) {

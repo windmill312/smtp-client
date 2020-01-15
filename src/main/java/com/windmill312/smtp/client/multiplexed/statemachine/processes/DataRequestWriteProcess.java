@@ -20,7 +20,11 @@ public class DataRequestWriteProcess implements Process {
 
             logger.debug("Execute DATA_REQUEST WRITE action for " + contextHolder.getMxRecord());
 
-            writeToChannel(contextHolder.getSelectionKey(), "DATA");
+            writeToChannel(
+                    contextHolder.getSelectionKey(),
+                    "DATA",
+                    false
+            );
 
         } catch (Exception e) {
             logger.error(e.getMessage());

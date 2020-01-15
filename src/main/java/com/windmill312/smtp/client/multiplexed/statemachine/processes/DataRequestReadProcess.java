@@ -11,8 +11,7 @@ import static com.windmill312.smtp.client.multiplexed.enums.Condition.UNDEFINED;
 import static com.windmill312.smtp.client.multiplexed.enums.Step.DATA;
 import static com.windmill312.smtp.client.multiplexed.enums.Step.FINALIZE;
 
-public class DataRequestReadProcess
-        implements Process {
+public class DataRequestReadProcess implements Process {
     private static final Logger logger = getLogger(DataRequestReadProcess.class);
 
     @Override

@@ -1,5 +1,7 @@
 package com.windmill312.smtp.client.common.logger;
 
+import com.windmill312.smtp.client.common.config.ApplicationProperties;
+
 import javax.annotation.Nonnull;
 
 import static com.windmill312.smtp.client.common.logger.LogLevel.DEBUG;
@@ -10,12 +12,12 @@ import static com.windmill312.smtp.client.common.logger.LogLevel.WARN;
 
 public class LoggerImpl implements Logger {
 
-    private final LoggerConfiguration loggerConfiguration;
+    private final LogLevel logLevel;
     private final LogQueue logQueue;
     private final Class clazz;
 
     LoggerImpl(Class clazz) {
-        this.loggerConfiguration = LoggerConfiguration.instance();
+        this.logLevel = ApplicationProperties.instance().getLogLevel();
         this.logQueue = LogQueue.instance();
         this.clazz = clazz;
     }
@@ -23,61 +25,61 @@ public class LoggerImpl implements Logger {
     @Override
     public void error(String message, String... values) {
         if (isErrorEnabled()) {
-            logQueue.enqueue(prepareLogMessage(ERROR, message));
+            logQueue.add(prepareLogMessage(ERROR, message));
         }
     }
 
     @Override
     public void warn(String message, String... values) {
         if (isWarnEnabled()) {
-            logQueue.enqueue(prepareLogMessage(WARN, message));
+            logQueue.add(prepareLogMessage(WARN, message));
         }
     }
 
     @Override
     public void info(String message, String... values) {
         if (isInfoEnabled()) {
-            logQueue.enqueue(prepareLogMessage(INFO, message));
+            logQueue.add(prepareLogMessage(INFO, message));
         }
     }
 
     @Override
     public void debug(String message, String... values) {
         if (isDebugEnabled()) {
-            logQueue.enqueue(prepareLogMessage(DEBUG, message));
+            logQueue.add(prepareLogMessage(DEBUG, message));
         }
     }
 
     @Override
     public void trace(String message, String... values) {
         if (isTraceEnabled()) {
-            logQueue.enqueue(prepareLogMessage(TRACE, message));
+            logQueue.add(prepareLogMessage(TRACE, message));
         }
     }
 
     @Override
     public boolean isErrorEnabled() {
-        return loggerConfiguration.getProperties().getLogLevel().getOrder() >= ERROR.getOrder();
+        return logLevel.getOrder() >= ERROR.getOrder();
     }
 
     @Override
     public boolean isWarnEnabled() {
-        return loggerConfiguration.getProperties().getLogLevel().getOrder() >= WARN.getOrder();
+        return logLevel.getOrder() >= WARN.getOrder();
     }
 
     @Override
     public boolean isInfoEnabled() {
-        return loggerConfiguration.getProperties().getLogLevel().getOrder() >= INFO.getOrder();
+        return logLevel.getOrder() >= INFO.getOrder();
     }
 
     @Override
     public boolean isDebugEnabled() {
-        return loggerConfiguration.getProperties().getLogLevel().getOrder() >= DEBUG.getOrder();
+        return logLevel.getOrder() >= DEBUG.getOrder();
     }
 
     @Override
     public boolean isTraceEnabled() {
-        return loggerConfiguration.getProperties().getLogLevel().getOrder() >= TRACE.getOrder();
+        return logLevel.getOrder() >= TRACE.getOrder();
     }
 
     @Nonnull

@@ -20,7 +20,11 @@ public class MailFromWriteProcess implements Process {
 
             logger.debug("Execute MAIL FROM action for " + contextHolder.getMxRecord());
 
-            writeToChannel(contextHolder.getSelectionKey(), "MAIL FROM: " + contextHolder.getMessages().peek().getFrom());
+            writeToChannel(
+                    contextHolder.getSelectionKey(),
+                    "MAIL FROM: " + contextHolder.getMessages().peek().getFrom(),
+                    false
+            );
 
         } catch (Exception e) {
             logger.error(e.getMessage());

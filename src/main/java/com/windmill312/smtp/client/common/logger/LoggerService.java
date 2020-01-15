@@ -38,7 +38,7 @@ public class LoggerService implements Runnable, AutoCloseable {
         logger.info("LoggerService thread started");
         try {
             while (!stopped) {
-                String logMessage = logQueue.dequeue();
+                String logMessage = logQueue.poll();
                 if (logMessage != null) {
                     Files.write(
                             createOrGetLogFilePath(properties.getLogPath()),
@@ -49,8 +49,9 @@ public class LoggerService implements Runnable, AutoCloseable {
             }
         } catch (IOException e) {
             logger.error("Got error while saving logs to file: " + e.getLocalizedMessage());
+        } catch (InterruptedException ex) {
+            logger.info("LoggerService thread stopped");
         }
-        logger.info("LoggerService thread stopped");
     }
 
     private Path createOrGetLogFilePath(String logPath) {

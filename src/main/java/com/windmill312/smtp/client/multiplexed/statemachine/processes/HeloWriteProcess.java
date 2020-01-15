@@ -22,7 +22,7 @@ class HeloWriteProcess implements Process {
 
             logger.debug("Execute HELO WRITE action for " + contextHolder.getMxRecord());
 
-            writeToChannel(contextHolder.getSelectionKey(), "HELO " + SERVER_NAME);
+            writeToChannel(contextHolder.getSelectionKey(), "HELO " + SERVER_NAME, false);
 
         } catch (Exception e) {
             logger.error(e.getMessage());
